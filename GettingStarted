@@ -1,0 +1,140 @@
+---
+title: "Getting Started Lab"
+subtitle: "Research Q: How does age affect the labor force?"
+author: "Pooja Jhobalia under the guidance of Margo Bergman"
+date: "10/09/2022"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath("/Users/Pooja/Desktop/Learn/Analytics/R /GettingStartedMark_Files"))
+```
+
+Install the Necessary Packages
+
+XLConnect
+
+tidyverse
+
+```{r eval=FALSE, include=FALSE}
+install.packages("XLConnect") #installs package to read Excel spreadsheets
+install.packages("tidyverse") #installs very powerful visualization package
+```
+
+Library the Necessary Packages
+
+readxl
+
+tidyverse
+
+```{r echo=FALSE, include=FALSE}
+library(readxl) 
+library(tidyverse)
+```
+
+
+Upload the Data
+
+Name the data set "cpsaat03"
+
+Use Sheet  "ByAge"
+
+```{r echo=FALSE, include=FALSE}
+cpsaat03 <- read_excel("/Users/Pooja/Desktop/Learn/Analytics/R /GettingStartedMark_Files/cpsaat03.xlsx",
+                       sheet = "ByAge") #puts data in Global Environment#
+```
+
+
+Find Summary Statistics
+
+```{r echo=FALSE, include=FALSE}
+summary(cpsaat03)  
+```
+
+
+Rename Variables
+
+Civilian labor force Not in Labor force to NLF
+
+Civilian NI pop to NIP 
+
+Civilian labor force Total to CLF
+
+
+```{r echo=FALSE, include=FALSE}
+NLF <-(cpsaat03$`Civilian labor force Not in Labor force`)
+NIP <-(cpsaat03$`Civilian NI pop`) 
+CLF<-(cpsaat03$`Civilian labor force Total`)
+```
+
+
+#create percentages#
+
+Not in the Labor Force Percentage
+
+Civilian Labor Force Total Percentage
+
+
+
+```{r echo=FALSE, include=FALSE}
+
+NLFPer<-NLF/NIP     
+NLFPer<-NLFPer*100  
+NLFPerc<-NLFPer 
+
+CLFPer<-CLF/NIP     
+CLFPer<-CLFPer*100  
+CLFPerc<-CLFPer 
+```
+
+Bar Chart of Civilian Labor Force Total with labels by Age
+
+
+```{r echo=FALSE, include=TRUE}
+barplot(cpsaat03$`Civilian labor force Total`, names.arg=cpsaat03$Age, xlab="Age")
+```
+
+Scatter Plot of Age and Civilian Labor Force by Percent of Population
+
+Change size to 10
+
+Change size to 5, color to Red
+
+Leave size Default, change color to Purple
+
+
+```{r echo=FALSE, include=TRUE}
+ggplot(data=cpsaat03) + geom_point(mapping=aes(x=Age, y=CLFPerc, size=10))
+
+ggplot(data=cpsaat03) + geom_point(mapping=aes(x=Age, y=CLFPerc, color="red", size=5))
+ggplot(data=cpsaat03) + geom_point(mapping=aes(x=Age, y=CLFPerc), color="purple")
+
+```
+
+Scatter Plot of Civilian Labor Force (Percent), Age, and Civilian Labor Force (Employed)
+
+
+```{r echo=FALSE, include=TRUE}
+CLFPercent <-cpsaat03$`Civilian labor force, percent of population`
+CLFEmployed <-cpsaat03$`Civilian labor force employed total`
+
+ggplot(data=cpsaat03) + geom_point(mapping=aes(x=Age, y=CLFPercent, size=CLFEmployed))
+
+```
+
+Scatter Plot of Percent of Population Not in Labor Force by Age with green dots for Ages with labor force non-participation over 50%
+
+
+```{r echo=FALSE, include=TRUE}
+cpsaat03$NLFPerc<-NLFPer
+cpsaat03$Colour <-cut(cpsaat03$NLFPerc, breaks=c(-Inf, 49.9, Inf), labels=c("brown", "green"))
+View(cpsaat03)
+ggplot(data=cpsaat03) + geom_point(mapping=aes(x=Age, y=NLFPerc), size=5, color=cpsaat03$Colour)
+
+```
+
+
+
