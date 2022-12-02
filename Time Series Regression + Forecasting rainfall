@@ -1,0 +1,171 @@
+---
+title: "Time Series Lab 2"
+author: "Pooja Jhobalia under guidance of Margo Bergman"
+date: "11/28/2022"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath("/Users/Pooja/Desktop/Learn/Analytics/R /TimeMark.mod3/part2"))
+```
+
+
+Library Packages
+```{r library}
+
+library(tidyverse)
+library(readxl)
+library(corrgram)
+library(tseries)
+library(forecast)
+```
+
+
+```{r }
+RainSeattleAll <- read_csv("PrecipitationSF.csv")
+
+```
+
+```{r data structure}
+dim(RainSeattleAll)    #returns the dimensions of an object
+str(RainSeattleAll)
+sum(is.na(RainSeattleAll)) #returns how many observations have "na"
+
+```
+
+
+```{r}
+sum(is.na(RainSeattleAll))
+
+RainSeattleAll[is.na(RainSeattleAll)] <- 0 #replaces "na" with 0. This is a choice, statistically, but you can't run the regression without it
+
+sum(is.na(RainSeattleAll))
+
+```
+
+Create a time series dataset for decomposition
+
+```{r time_series_creation}
+#we are converting date and precipitation to number type
+RainSeattleAll$DATE<-as.POSIXct(RainSeattleAll$DATE, format="%m/%d/%Y")
+#we use capital Y for 4 digit year
+RainSeattleAll$PRCP<-as.numeric(RainSeattleAll$PRCP)
+
+View(RainSeattleAll)
+
+#creates monthly version of our time series
+MonthlyRain<-aggregate(list(rain = RainSeattleAll$PRCP), 
+          list(month = cut(RainSeattleAll$DATE, "month")), 
+          mean)
+MonthlyRain
+
+#we are turning into a TIMES SERIES, decide frequency-monthly,yearly or daily and c(year when you want to start from, month of the year you wana start from)
+MonthlyRain2<-ts(MonthlyRain$rain, frequency = 12, start = c(1951,1))
+MonthlyRain2
+
+Rain<-ts(RainSeattleAll$PRCP, frequency = 365, start = c(1951,1))
+
+```
+
+
+Create a plot of the time series
+```{r plots}
+plot.ts(Rain)
+plot.ts(MonthlyRain2)
+
+```
+
+
+Identify the trend/season/random components
+```{r decomposition}
+RainParts<-decompose(Rain)
+RainMonthParts<-decompose(MonthlyRain2)
+plot(RainParts)
+plot(RainMonthParts)
+```
+
+Modeling using exponential smoothing - Full data
+```{r HoltWintersFull}
+RainModel1<-HoltWinters(Rain)
+predict(RainModel1, h=325)
+RainModel1
+RainModel1$SSE
+plot(RainModel1, col=4, col.predicted=6)
+residualsHolt1<-residuals(RainModel1)
+plot(residualsHolt1)
+acf(residualsHolt1)
+pacf(residualsHolt1)
+```
+
+Modeling using exponential smoothing - Monthly data
+```{r HoltWintersMonthly}
+RainModel2<-HoltWinters(MonthlyRain2)
+
+RainModel2
+RainModel2$SSE
+plot(RainModel2, col=4, col.predicted=6)
+residualsHolt2<-residuals(RainModel2)
+plot(residualsHolt2)
+acf(residualsHolt2)
+pacf(residualsHolt2)
+```
+
+
+Forecasting using exponential smoothing - Full Data
+```{r HWForecastFull}
+RainForecast<-forecast(Rain, h=400)
+plot(RainForecast)
+```
+
+Forecasting using exponential smoothing - Monthly Data
+```{r HWForecastMonthly}
+RainForecast2<-forecast(MonthlyRain2, h=13)
+plot(RainForecast2)
+```
+
+Modeling using an auto.arima model - Full Data 
+```{r AutoArimaFull}
+par(mfrow=c(1,2))
+acf(Rain)
+pacf(Rain)
+
+
+RainArima<-auto.arima(Rain, seasonal = TRUE)
+RainArima
+acf(ts(RainArima$residuals), main='ACF Residual - Full')
+pacf(ts(RainArima$residuals), main='PACF Residual - Full')
+
+
+```
+
+
+Modeling using an auto.arima model - Monthly Data 
+```{r AutoArimaMonthly}
+acf(MonthlyRain2)
+pacf(MonthlyRain2)
+
+RainArima2<-auto.arima(MonthlyRain2, seasonal = TRUE)
+RainArima2
+
+acf(ts(RainArima2$residuals), main='ACF Residual - Monthly')
+pacf(ts(RainArima2$residuals), main='PACF Residual- Monthly')
+
+```
+
+
+```{r predictions}
+
+prediction1=predict(RainArima,n.ahead=325)
+prediction1
+plot(forecast(RainArima,h=24))
+
+prediction2=predict(RainArima2,n.ahead=7000)
+prediction2
+plot(forecast(RainArima2,h=24))
+
+```
+
+
